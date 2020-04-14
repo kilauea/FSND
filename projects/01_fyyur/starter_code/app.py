@@ -30,6 +30,16 @@ migrate = Migrate(app, db)
 # Models.
 #----------------------------------------------------------------------------#
 
+#
+# Create the association table
+# From: https://docs.sqlalchemy.org/en/13/orm/basic_relationships.html#many-to-many
+# Other: https://stackoverflow.com/questions/5756559/how-to-build-many-to-many-relations-using-sqlalchemy-a-good-example
+#
+venue_artist = db.Table('VenueArtist',
+  db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True),
+  db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True),
+)
+
 class Venue(db.Model):
     __tablename__ = 'Venue'
 
@@ -39,8 +49,13 @@ class Venue(db.Model):
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
+    genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website = db.Column(db.String(120))
+    seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
+    seeking_description = db.Column(db.String(500))
+    artists = db.relationship('Artist', secondary=venue_artist, backref=db.backref('venues_', lazy=True))
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -55,10 +70,22 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website = db.Column(db.String(120))
+    seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
+    seeking_description = db.Column(db.String(500))
+    venues = db.relationship('Venue', secondary=venue_artist, backref=db.backref('artits_', lazy=True))
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+
+class Show(db.Model):
+    __tablename__ = 'Show'
+
+    id = db.Column(db.Integer, primary_key=True)
+    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
+    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
+    start_time = db.Column(db.DateTime)
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -210,7 +237,15 @@ def show_venue(venue_id):
     "upcoming_shows_count": 1,
   }
   data = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
-  return render_template('pages/show_venue.html', venue=data)
+
+  venue_data = Venue.query.get(venue_id).__dict__
+  del venue_data['_sa_instance_state']
+  venue_data['past_shows'] = []
+  venue_data['past_shows_count'] = 0
+  venue_data['upcoming_shows'] = []
+  venue_data['upcoming_shows_count'] = 0
+  venue_data['genres'] = venue_data['genres'][1:-1].split(',')
+  return render_template('pages/show_venue.html', venue=venue_data)
 
 #  Create Venue
 #  ----------------------------------------------------------------
@@ -349,7 +384,15 @@ def show_artist(artist_id):
     "upcoming_shows_count": 3,
   }
   data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
-  return render_template('pages/show_artist.html', artist=data)
+  
+  artist_data = Artist.query.get(artist_id).__dict__
+  del artist_data['_sa_instance_state']
+  artist_data['past_shows'] = []
+  artist_data['past_shows_count'] = 0
+  artist_data['upcoming_shows'] = []
+  artist_data['upcoming_shows_count'] = 0
+  artist_data['genres'] = artist_data['genres'][1:-1].split(',')
+  return render_template('pages/show_artist.html', artist=artist_data)
 
 #  Update
 #  ----------------------------------------------------------------
