@@ -30,16 +30,6 @@ migrate = Migrate(app, db)
 # Models.
 #----------------------------------------------------------------------------#
 
-#
-# Create the association table
-# From: https://docs.sqlalchemy.org/en/13/orm/basic_relationships.html#many-to-many
-# Other: https://stackoverflow.com/questions/5756559/how-to-build-many-to-many-relations-using-sqlalchemy-a-good-example
-#
-venue_artist = db.Table('VenueArtist',
-  db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True),
-  db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True),
-)
-
 class Venue(db.Model):
     __tablename__ = 'Venue'
 
@@ -55,9 +45,7 @@ class Venue(db.Model):
     website = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String(500))
-    artists = db.relationship('Artist', secondary=venue_artist, backref=db.backref('venues_', lazy=True))
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    shows = db.relationship('Show', backref="venue", lazy=True)
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -73,11 +61,7 @@ class Artist(db.Model):
     website = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String(500))
-    venues = db.relationship('Venue', secondary=venue_artist, backref=db.backref('artits_', lazy=True))
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+    shows = db.relationship('Show', backref="artist", lazy=True)
 
 class Show(db.Model):
     __tablename__ = 'Show'
@@ -85,7 +69,7 @@ class Show(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
     artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
-    start_time = db.Column(db.DateTime)
+    start_time = db.Column(db.DateTime, nullable=False)
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -513,6 +497,20 @@ def shows():
     "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
     "start_time": "2035-04-15T20:00:00.000Z"
   }]
+
+  query = Show.query.join(Venue).join(Artist).all()
+  data = []
+  for el in query:
+    newshow = {
+      "venue_id": el.venue_id,
+      "venue_name": el.venue.name,
+      "artist_id": el.artist_id,
+      "artist_name": el.artist.name,
+      "artist_image_link": el.artist.image_link,
+      "start_time": el.start_time.strftime('%Y-%m-%d %H:%M:%S')
+    }
+    data.append(newshow)
+
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
@@ -646,10 +644,59 @@ def add_artist():
   db.session.add_all(artists)
   db.session.commit()
 
+def add_shows():
+  data=[{
+    "venue_id": 1,
+    "venue_name": "The Musical Hop",
+    "artist_id": 4,
+    "artist_name": "Guns N Petals",
+    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
+    "start_time": "2019-05-21T21:30:00.000Z"
+  }, {
+    "venue_id": 3,
+    "venue_name": "Park Square Live Music & Coffee",
+    "artist_id": 5,
+    "artist_name": "Matt Quevedo",
+    "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
+    "start_time": "2019-06-15T23:00:00.000Z"
+  }, {
+    "venue_id": 3,
+    "venue_name": "Park Square Live Music & Coffee",
+    "artist_id": 6,
+    "artist_name": "The Wild Sax Band",
+    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
+    "start_time": "2035-04-01T20:00:00.000Z"
+  }, {
+    "venue_id": 3,
+    "venue_name": "Park Square Live Music & Coffee",
+    "artist_id": 6,
+    "artist_name": "The Wild Sax Band",
+    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
+    "start_time": "2035-04-08T20:00:00.000Z"
+  }, {
+    "venue_id": 3,
+    "venue_name": "Park Square Live Music & Coffee",
+    "artist_id": 6,
+    "artist_name": "The Wild Sax Band",
+    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
+    "start_time": "2035-04-15T20:00:00.000Z"
+  }]
+
+  db.session.query(Show).delete()
+  shows = []
+  for el in data:
+    del el['venue_name']
+    del el['artist_name']
+    del el['artist_image_link']
+    shows.append(Show(**el))
+  db.session.add_all(shows)
+  db.session.commit()
+
 POPULATE = False
-if POPULATE:
-  add_venues()
-  add_artist()
+if POPULATE == True:
+  #add_venues()
+  #add_artist()
+  add_shows()
 
 #----------------------------------------------------------------------------#
 # Launch.
