@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, Response, flash, redirect, ur
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from sqlalchemy import text
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
@@ -498,16 +499,73 @@ def shows():
     "start_time": "2035-04-15T20:00:00.000Z"
   }]
 
-  query = Show.query.join(Venue).join(Artist).all()
+  #
+  # Option 1: using raw SQL query
+  #
+  # stmt = text('''
+  # SELECT
+  #   "Venue".id as venue_id,
+  #   "Venue".name as venue_name,
+  #   "Artist".id as artist_id,
+  #   "Artist".name as artist_name,
+  #   "Artist".image_link as artist_image_link,
+  #   "Show".start_time as start_time
+  # FROM "Show"
+  # INNER JOIN "Venue"
+  # ON "Show".venue_id = "Venue".id
+  # INNER JOIN "Artist"
+  # ON "Show".artist_id = "Artist".id''')
+  # result = db.engine.execute(stmt).fetchall()
+  # print(str(result))
+
+  #
+  # Option 2: querying all
+  #
+  # query = Show.query.join(Venue).join(Artist).all()
+
+  #
+  # Option 3: using union of two queries
+  #
+  # venues = Show.query.join(Venue).filter(Show.venue_id == Venue.id)
+  # artists = Show.query.join(Artist).filter(Show.artist_id == Artist.id)
+  # query = venues.union(artists).order_by(Show.start_time.asc())
+
+  #
+  # Option 4: using filtered joins
+  #
+  # query = Show.query.join(Venue).filter(Show.venue_id == Venue.id).\
+  #   join(Artist).filter(Show.artist_id == Artist.id).\
+  #   order_by(Show.start_time.asc())
+
+  # data = []
+  # for el in query:
+  #   newshow = {
+  #     "venue_id": el.venue_id,
+  #     "venue_name": el.venue.name,
+  #     "artist_id": el.artist_id,
+  #     "artist_name": el.artist.name,
+  #     "artist_image_link": el.artist.image_link,
+  #     "start_time": el.start_time.strftime('%Y-%m-%d %H:%M:%S')
+  #   }
+  #   data.append(newshow)
+
+  #
+  # Option 5: using filtered joins and limiting columns
+  #
+  query = Show.query.join(Venue).filter(Show.venue_id == Venue.id).\
+    join(Artist).filter(Show.artist_id == Artist.id).\
+    with_entities(Venue.id, Venue.name, Artist.id, Artist.name, Artist.image_link, Show.start_time).\
+    order_by(Show.start_time.asc())
+
   data = []
   for el in query:
     newshow = {
-      "venue_id": el.venue_id,
-      "venue_name": el.venue.name,
-      "artist_id": el.artist_id,
-      "artist_name": el.artist.name,
-      "artist_image_link": el.artist.image_link,
-      "start_time": el.start_time.strftime('%Y-%m-%d %H:%M:%S')
+      "venue_id": el[0],
+      "venue_name": el[1],
+      "artist_id": el[2],
+      "artist_name": el[3],
+      "artist_image_link": el[4],
+      "start_time": el[5].strftime('%Y-%m-%d %H:%M:%S')
     }
     data.append(newshow)
 
