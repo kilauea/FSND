@@ -2,18 +2,44 @@
 {% block title %}Fyyur | Venues{% endblock %}
 {% block content %}
 {% for area in areas %}
-<h3>{{ area.city }}, {{ area.state }}</h3>
+	<h3 class="clearfix">{{ area.city }}, {{ area.state }}</h3>
 	<ul class="items">
 		{% for venue in area.venues %}
-		<li>
-			<a href="/venues/{{ venue.id }}">
+		<li class="clearfix">
+			<a href="/venues/{{ venue.id }}" style="float: left;">
 				<i class="fas fa-music"></i>
 				<div class="item">
 					<h5>{{ venue.name }}</h5>
 				</div>
 			</a>
+			<button type="button" class="pull-right btn btn-danger btn-rounded btn-sm my-0" data-id="{{ venue.id }}">&cross;</button>
 		</li>
 		{% endfor %}
 	</ul>
 {% endfor %}
+<script>
+deleteButtons = document.querySelectorAll('.btn-danger');
+	for (let i = 0; i < deleteButtons.length; i++) {
+			const button = deleteButtons[i];
+			button.onclick = function(e) {
+				console.log('event', e);
+				const venueId = e.target.dataset['id'];
+				fetch('/venues/' + venueId, {
+					method: 'DELETE'
+				})
+				.then(response => response.json())
+        .then(jsonResponse => {
+					// console.log(jsonResponse);
+					if(!jsonResponse.success) {
+						console.log("Error", jsonResponse.success);
+						location.reload();
+					}
+					else {
+						// console.log("OK")
+						window.location = "/"
+					}
+				})
+			}
+	}
+</script>
 {% endblock %}
