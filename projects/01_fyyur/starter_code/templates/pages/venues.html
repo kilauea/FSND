@@ -13,12 +13,13 @@
 				</div>
 			</a>
 			<button type="button" class="pull-right btn btn-danger btn-rounded btn-sm my-0" data-id="{{ venue.id }}">&cross;</button>
+			<button type="button" class="pull-right btn btn-primary btn-rounded btn-sm my-0" onclick="window.location.href='/venues/{{ venue.id }}/edit'">...</button>
 		</li>
 		{% endfor %}
 	</ul>
 {% endfor %}
 <script>
-deleteButtons = document.querySelectorAll('.btn-danger');
+	deleteButtons = document.querySelectorAll('.btn-danger');
 	for (let i = 0; i < deleteButtons.length; i++) {
 			const button = deleteButtons[i];
 			button.onclick = function(e) {
