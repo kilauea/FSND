@@ -538,7 +538,7 @@ def add_venues():
   Function for adding the mockup date to the Venue table
   '''
   data1={
-    "id": 1,
+    #"id": 1,
     "name": "The Musical Hop",
     "genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk"],
     "address": "1015 Folsom Street",
@@ -552,7 +552,7 @@ def add_venues():
     "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
   }
   data2={
-    "id": 2,
+    #"id": 2,
     "name": "The Dueling Pianos Bar",
     "genres": ["Classical", "R&B", "Hip-Hop"],
     "address": "335 Delancey Street",
@@ -565,7 +565,7 @@ def add_venues():
     "image_link": "https://images.unsplash.com/photo-1497032205916-ac775f0649ae?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=750&q=80",
   }
   data3={
-    "id": 3,
+    #"id": 3,
     "name": "Park Square Live Music & Coffee",
     "genres": ["Rock n Roll", "Jazz", "Classical", "Folk"],
     "address": "34 Whiskey Moore Ave",
@@ -578,17 +578,30 @@ def add_venues():
     "image_link": "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=747&q=80",
   }
 
-  db.session.query(Venue).delete()
-  venues = [Venue(**data1), Venue(**data2), Venue(**data3)]
-  db.session.add_all(venues)
-  db.session.commit()
+  try:
+    venues = [Venue(**data1), Venue(**data2), Venue(**data3)]
+    db.session.add_all(venues)
+    db.session.commit()
+  except:
+    db.session.rollback()
+    print(sys.exc_info())
+  finally:
+    db.session.close()
 
 def add_artist():
   '''
   Function for adding the mockup date to the Artist table
   '''
+  dummy={
+    "name": "dummy",
+    "genres": ["Rock n Roll"],
+    "city": "San Francisco",
+    "state": "CA",
+    "phone": "000-000-0000",
+    "seeking_venue": False,
+  }
   data1={
-    "id": 4,
+    #"id": 4,
     "name": "Guns N Petals",
     "genres": ["Rock n Roll"],
     "city": "San Francisco",
@@ -601,7 +614,7 @@ def add_artist():
     "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
   }
   data2={
-    "id": 5,
+    #"id": 5,
     "name": "Matt Quevedo",
     "genres": ["Jazz"],
     "city": "New York",
@@ -612,7 +625,7 @@ def add_artist():
     "image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
   }
   data3={
-    "id": 6,
+    #"id": 6,
     "name": "The Wild Sax Band",
     "genres": ["Jazz", "Classical"],
     "city": "San Francisco",
@@ -622,10 +635,17 @@ def add_artist():
     "image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
   }
 
-  db.session.query(Artist).delete()
-  artists = [Artist(**data1), Artist(**data2), Artist(**data3)]
-  db.session.add_all(artists)
-  db.session.commit()
+  try:
+    artists = [Artist(**dummy), Artist(**dummy), Artist(**dummy), Artist(**data1), Artist(**data2), Artist(**data3)]
+    db.session.add_all(artists)
+    db.session.commit()
+    Artist.query.filter_by(name='dummy').delete()
+    db.session.commit()
+  except:
+    db.session.rollback()
+    print(sys.exc_info())
+  finally:
+    db.session.close()
 
 def add_shows():
   data=[{
@@ -665,20 +685,27 @@ def add_shows():
     "start_time": "2035-04-15T20:00:00.000Z"
   }]
 
-  db.session.query(Show).delete()
-  shows = []
-  for el in data:
-    del el['venue_name']
-    del el['artist_name']
-    del el['artist_image_link']
-    shows.append(Show(**el))
-  db.session.add_all(shows)
-  db.session.commit()
+  try:
+    shows = []
+    for el in data:
+      del el['venue_name']
+      del el['artist_name']
+      del el['artist_image_link']
+      shows.append(Show(**el))
+    db.session.add_all(shows)
+    db.session.commit()
+  except:
+    db.session.rollback()
+    print(sys.exc_info())
+  finally:
+    db.session.close()
 
 POPULATE = False
 if POPULATE == True:
-  #add_venues()
-  #add_artist()
+  db.drop_all(app=app)
+  db.create_all(app=app)
+  add_venues()
+  add_artist()
   add_shows()
 
 #----------------------------------------------------------------------------#
