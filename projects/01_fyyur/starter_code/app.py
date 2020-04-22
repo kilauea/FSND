@@ -34,7 +34,9 @@ app.jinja_env.filters['datetime'] = format_datetime
 
 @app.route('/')
 def index():
-  return render_template('pages/home.html')
+  venues = Venue.query.order_by(Venue.create_time.desc()).limit(10).all()
+  artists = Artist.query.order_by(Artist.create_time.desc()).limit(10).all()
+  return render_template('pages/home.html', venues=venues, artists=artists)
 
 
 #  Venues
@@ -123,6 +125,7 @@ def show_venue(venue_id):
     'name': venue_query.name,
     'city': venue_query.city,
     'state': venue_query.state,
+    'address': venue_query.address,
     'phone': venue_query.phone,
     'genres': venue_query.genres[1:-1].replace('"', '').split(','),
     'image_link': venue_query.image_link,
@@ -150,26 +153,39 @@ def create_venue_form():
 def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
-  try:
-    venue = Venue(
-      name = request.form['name'],
-      city = request.form['city'],
-      state = request.form['state'],
-      address = request.form['address'],
-      phone = request.form['phone'],
-      genres = request.form.getlist('genres'),
-      facebook_link = request.form['facebook_link'],
-      seeking_talent = False
-    )
-    db.session.add(venue)
-    db.session.commit()
-    flash('Venue ' + request.form['name'] + ' was successfully created!')
-  except:
-    db.session.rollback()
-    print(sys.exc_info())
-    flash('Error! Venue ' + request.form['name'] + ' could not be created!')
-  finally:
-    db.session.close()
+  form = VenueForm(request.form)
+  if not form.validate():
+    errors = ''
+    if form.errors:
+      for key, value in form.errors.items():
+        errors += ' -' + key + ': ' + value[0]
+    if errors:
+      flash('Error! Venue ' + request.form['name'] + ' could not be created!' + errors)
+      return render_template('forms/new_venue.html', form=form)
+  else:
+    try:
+      venue = Venue(
+        name = request.form['name'],
+        city = request.form['city'],
+        state = request.form['state'],
+        address = request.form['address'],
+        phone = request.form['phone'],
+        genres = request.form.getlist('genres'),
+        image_link = request.form['image_link'],
+        facebook_link = request.form['facebook_link'],
+        website = request.form['website'],
+        seeking_talent = 'seeking_talent' in request.form,
+        seeking_description = request.form['seeking_description']
+      )
+      db.session.add(venue)
+      db.session.commit()
+      flash('Venue ' + request.form['name'] + ' was successfully created!')
+    except:
+      db.session.rollback()
+      print(sys.exc_info())
+      flash('Error! Venue ' + request.form['name'] + ' could not be created!')
+    finally:
+      db.session.close()
 
  # TODO: on unsuccessful db insert, flash an error instead.
   # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
@@ -349,7 +365,7 @@ def edit_artist_submission(artist_id):
     artist_query.image_link = request.form['image_link']
     artist_query.facebook_link = request.form['facebook_link']
     artist_query.website = request.form['website']
-    artist_query.seeking_venue = request.form['seeking_venue']
+    artist_query.seeking_venue = 'seeking_venue' in request.form
     artist_query.seeking_description = request.form['seeking_description']
    
     db.session.commit()
@@ -385,7 +401,7 @@ def edit_venue(venue_id):
     form.facebook_link.default = venue_query.facebook_link
   if venue_query.website:
     form.website.default = venue_query.website
-  form.seeking_talent.default = venue_query.seeking_talent
+  form.seeking_talent.checked = venue_query.seeking_talent
   form.seeking_description.default = venue_query.seeking_description
   form.process()
 
@@ -424,7 +440,7 @@ def edit_venue_submission(venue_id):
     venue_query.image_link = request.form['image_link']
     venue_query.facebook_link = request.form['facebook_link']
     venue_query.website = request.form['website']
-    venue_query.seeking_talent = request.form['seeking_talent']
+    venue_query.seeking_talent = 'seeking_talent' in request.form
     venue_query.seeking_description = request.form['seeking_description']
    
     db.session.commit()
@@ -455,10 +471,10 @@ def create_artist_submission():
     errors = ''
     if form.errors:
       for key, value in form.errors.items():
-        if not 'token' in key:
-          errors += ' -' + key + ': ' + value[0]
-    flash('Error! Artist ' + request.form['name'] + ' could not be created!' + errors)
-    return render_template('forms/new_artist.html', form=form)
+        errors += ' -' + key + ': ' + value[0]
+    if errors:
+      flash('Error! Artist ' + request.form['name'] + ' could not be created!' + errors)
+      return render_template('forms/new_artist.html', form=form)
   else:
     try:
       artist = Artist(
@@ -467,8 +483,11 @@ def create_artist_submission():
         state = request.form['state'],
         phone = request.form['phone'],
         genres = request.form.getlist('genres'),
+        image_link = request.form['image_link'],
         facebook_link = request.form['facebook_link'],
-        seeking_venue = False
+        website = request.form['website'],
+        seeking_venue = 'seeking_venue' in request.form,
+        seeking_description = equest.form['seeking_description']
       )
       db.session.add(artist)
       db.session.commit()

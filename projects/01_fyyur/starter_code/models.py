@@ -1,15 +1,19 @@
 from flask import Flask
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
 from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect
 
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
 
+csrf = CSRFProtect()
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
+csrf.init_app(app)
 db = SQLAlchemy(app)
 
 # Connect to a local postgresql database
@@ -36,6 +40,7 @@ class Venue(db.Model):
     seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String(500))
     shows = db.relationship('Show', backref="venue", lazy=True)
+    create_time = db.Column(db.DateTime(), default=func.now(), nullable=False)
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -52,6 +57,7 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String(500))
     shows = db.relationship('Show', backref="artist", lazy=True)
+    create_time = db.Column(db.DateTime(), default=func.now(), nullable=False)
 
 class Show(db.Model):
     __tablename__ = 'Show'
