@@ -3,14 +3,40 @@
 {% block content %}
 <ul class="items">
 	{% for artist in artists %}
-	<li>
-		<a href="/artists/{{ artist.id }}">
+	<li class="clearfix">
+		<a href="/artists/{{ artist.id }}" style="float: left;">
 			<i class="fas fa-users"></i>
 			<div class="item">
 				<h5>{{ artist.name }}</h5>
 			</div>
 		</a>
-	</li>
-	{% endfor %}
+		<button type="button" class="pull-right btn btn-danger btn-rounded btn-sm my-0" data-id="{{ artist.id }}">&cross;</button>
+		<button type="button" class="pull-right btn btn-primary btn-rounded btn-sm my-0" onclick="window.location.href='/artists/{{ artist.id }}/edit'">...</button>
+		</li>
+{% endfor %}
 </ul>
-{% endblock %}
+<script>
+	deleteButtons = document.querySelectorAll('.btn-danger');
+	for (let i = 0; i < deleteButtons.length; i++) {
+			const button = deleteButtons[i];
+			button.onclick = function(e) {
+				console.log('event', e);
+				const artistId = e.target.dataset['id'];
+				fetch('/artists/' + artistId, {
+					method: 'DELETE'
+				})
+				.then(response => response.json())
+        .then(jsonResponse => {
+					// console.log(jsonResponse);
+					if(!jsonResponse.success) {
+						console.log("Error", jsonResponse.success);
+						location.reload();
+					}
+					else {
+						// console.log("OK")
+						window.location = "/"
+					}
+				})
+			}
+	}
+</script>{% endblock %}
