@@ -16,17 +16,45 @@ def create_app(test_config=None):
   '''
   @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
   '''
+  cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
   '''
   @TODO: Use the after_request decorator to set Access-Control-Allow
   '''
+  # CORS Headers 
+  @app.after_request
+  def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,true')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PATCH,POST,DELETE,OPTIONS')
+    return response
 
+  def paginate_selection(request, selection):
+    page = request.args.get('page', 1, type=int)
+    start =  (page - 1) * QUESTIONS_PER_PAGE
+    end = start + QUESTIONS_PER_PAGE
+
+    formated_selection = [el.format() for el in selection]
+    current_selection = formated_selection[start:end]
+    if len(current_selection) == 0:
+      abort(404)
+
+    return current_selection
+  
   '''
   @TODO: 
   Create an endpoint to handle GET requests 
   for all available categories.
   '''
+  @app.route('/categories')
+  def get_categories():
+    selection = Category.query.order_by(Category.id.asc()).all()
+    categories_page = paginate_selection(request, selection)
 
+    return jsonify({
+      'success': True,
+      'categories': categories_page,
+      'total_categories': len(selection)
+    })
 
   '''
   @TODO: 
@@ -40,6 +68,19 @@ def create_app(test_config=None):
   ten questions per page and pagination at the bottom of the screen for three pages.
   Clicking on the page numbers should update the questions. 
   '''
+  @app.route('/questions')
+  def get_questions():
+    selection = Question.query.order_by(Question.id.asc()).all()
+    questions_page = paginate_selection(request, selection)
+    categories = Category.query.order_by(Category.id.asc()).all()
+
+    return jsonify({
+      'success': True,
+      'questions': questions_page,
+      'total_questions': len(Question.query.all()),
+      'categories': {category.id: category.type for category in categories},
+      'current_category': 1
+    })
 
   '''
   @TODO: 
@@ -98,7 +139,30 @@ def create_app(test_config=None):
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
-  
+  @app.errorhandler(404)
+  def not_found(error):
+    return jsonify({
+      "success": False, 
+      "error": 404,
+      "message": "resource not found"
+      }), 404
+
+  @app.errorhandler(422)
+  def unprocessable(error):
+    return jsonify({
+      "success": False, 
+      "error": 422,
+      "message": "unprocessable"
+      }), 422
+
+  @app.errorhandler(400)
+  def bad_request(error):
+    return jsonify({
+      "success": False, 
+      "error": 400,
+      "message": "bad request"
+      }), 400
+
   return app
 
     
