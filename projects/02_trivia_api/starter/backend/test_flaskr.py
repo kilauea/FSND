@@ -70,6 +70,32 @@ class TriviaTestCase(unittest.TestCase):
     self.assertEqual(data['success'], False)
     self.assertEqual(data['message'], 'resource not found')
 
+  def test_delete_questions(self):
+    question = Question.query.first()
+    self.assertTrue(question)
+    id = question.id
+    res = self.client().delete('/questions/' + str(id))
+    data = json.loads(res.data)
+
+    question = Question.query.filter(Question.id == id).one_or_none()
+
+    self.assertEqual(res.status_code, 200)
+    self.assertEqual(data['success'], True)
+    self.assertEqual(data['deleted'], id)
+    self.assertTrue(len(data['questions']))
+    self.assertTrue(data['total_questions'])
+    self.assertTrue(isinstance(data['categories'], dict))
+    self.assertTrue(len(data['categories']))
+    self.assertTrue(data['current_category'])
+
+  def test_404_delete_question_does_not_exist(self):
+    res = self.client().delete('/questions/0')
+    data = json.loads(res.data)
+
+    self.assertEqual(res.status_code, 422)
+    self.assertEqual(data['success'], False)
+    self.assertEqual(data['message'], 'unprocessable')
+
   def test_get_questions_per_category(self):
     res = self.client().get('/categories/1/questions')
     data = json.loads(res.data)
