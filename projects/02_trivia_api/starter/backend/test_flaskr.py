@@ -18,6 +18,13 @@ class TriviaTestCase(unittest.TestCase):
     self.database_path = "postgres://{}/{}".format('localhost:5432', self.database_name)
     setup_db(self.app, self.database_path)
 
+    self.new_question = {
+      'question': 'What national team won the futbol world cup in 2011',
+      'answer': 'Spain',
+      'category': '6',
+      'difficulty': '2'
+    }
+
     # binds the app to the current context
     with self.app.app_context():
       self.db = SQLAlchemy()
@@ -90,6 +97,33 @@ class TriviaTestCase(unittest.TestCase):
 
   def test_404_delete_question_does_not_exist(self):
     res = self.client().delete('/questions/0')
+    data = json.loads(res.data)
+
+    self.assertEqual(res.status_code, 422)
+    self.assertEqual(data['success'], False)
+    self.assertEqual(data['message'], 'unprocessable')
+
+  def test_create_new_questions(self):
+    res = self.client().post('/questions', json=self.new_question)
+    data = json.loads(res.data)
+
+    self.assertEqual(res.status_code, 200)
+    self.assertEqual(data['success'], True)
+
+  def test_422_create_new_questions_without_question(self):
+    fake_question = self.new_question
+    fake_question['question'] = ''
+    res = self.client().post('/questions', json=fake_question)
+    data = json.loads(res.data)
+
+    self.assertEqual(res.status_code, 422)
+    self.assertEqual(data['success'], False)
+    self.assertEqual(data['message'], 'unprocessable')
+
+  def test_422_create_new_questions_without_answer(self):
+    fake_question = self.new_question
+    fake_question['answer'] = ''
+    res = self.client().post('/questions', json=fake_question)
     data = json.loads(res.data)
 
     self.assertEqual(res.status_code, 422)
