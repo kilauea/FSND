@@ -1,4 +1,5 @@
 import os
+import sys
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -110,6 +111,7 @@ def create_app(test_config=None):
         'current_category': 1
       })
     except:
+      print(sys.exc_info())
       abort(422)
 
   '''
@@ -122,30 +124,6 @@ def create_app(test_config=None):
   the form will clear and the question will appear at the end of the last page
   of the questions list in the "List" tab.  
   '''
-  @app.route('/questions', methods=['POST'])
-  def create_new_questions():
-    body = request.get_json()
-
-    try:
-      question = body.get('question', None)
-      answer = body.get('answer', None)
-      category = body.get('category', None)
-      difficulty = body.get('difficulty', None)
-      if not (question and answer):
-        abort(422)
-      new_question = Question(
-        question=question,
-        answer=answer,
-        category=category,
-        difficulty=difficulty
-      )
-      new_question.insert()
-      return jsonify({
-        'success': True
-      })
-    except:
-      abort(422)
-
   '''
   @TODO: 
   Create a POST endpoint to get questions based on a search term. 
@@ -156,6 +134,43 @@ def create_app(test_config=None):
   only question that include that string within their question. 
   Try using the word "title" to start. 
   '''
+  @app.route('/questions', methods=['POST'])
+  def create_and_search_questions():
+    body = request.get_json()
+    try:
+      if 'searchTerm' in body:
+        # Search a question based on searchTerm
+        search_term = body.get('searchTerm', None)
+        if search_term == '':
+          abort(422)
+        questions = Question.query.filter(Question.question.ilike('%' + search_term + '%'))
+        return jsonify({
+          'success': True,
+          'questions': paginate_selection(request, questions),
+          'total_questions': len(Question.query.all()),
+          'current_category': 1
+        })
+      else:
+        # Create a new question
+        question = body.get('question', None)
+        answer = body.get('answer', None)
+        category = body.get('category', None)
+        difficulty = body.get('difficulty', None)
+        if not (question and answer):
+          abort(422)
+        new_question = Question(
+          question=question,
+          answer=answer,
+          category=category,
+          difficulty=difficulty
+        )
+        new_question.insert()
+        return jsonify({
+          'success': True
+        })
+    except:
+      print(sys.exc_info())
+      abort(422)
 
   '''
   @TODO: 
@@ -222,4 +237,6 @@ def create_app(test_config=None):
 
   return app
 
-    
+if __name__ == '__main__':
+  app = create_app()
+  app.run(debug=True)
