@@ -48,13 +48,12 @@ def create_app(test_config=None):
   '''
   @app.route('/categories')
   def get_categories():
-    selection = Category.query.order_by(Category.id.asc()).all()
-    categories_page = paginate_selection(request, selection)
+    categories = Category.query.order_by(Category.id.asc()).all()
 
     return jsonify({
       'success': True,
-      'categories': categories_page,
-      'total_categories': len(selection)
+      'categories': {category.id: category.type for category in categories},
+      'total_categories': len(categories)
     })
 
   '''
@@ -236,7 +235,3 @@ def create_app(test_config=None):
       }), 400
 
   return app
-
-if __name__ == '__main__':
-  app = create_app()
-  app.run(debug=True)
