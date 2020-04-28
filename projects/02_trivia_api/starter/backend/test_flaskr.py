@@ -19,7 +19,7 @@ class TriviaTestCase(unittest.TestCase):
     setup_db(self.app, self.database_path)
 
     self.new_question = {
-      'question': 'What national team won the futbol world cup in 2011',
+      'question': 'Which country won the soccer World Cup in 2011',
       'answer': 'Spain',
       'category': '6',
       'difficulty': '2'
@@ -46,16 +46,9 @@ class TriviaTestCase(unittest.TestCase):
 
     self.assertEqual(res.status_code, 200)
     self.assertEqual(data['success'], True)
+    self.assertTrue(isinstance(data['categories'], dict))
     self.assertTrue(len(data['categories']))
     self.assertTrue(data['total_categories'])
-
-  def test_404_get_categories_beyond_valid_page(self):
-    res = self.client().get('/categories?page=0')
-    data = json.loads(res.data)
-
-    self.assertEqual(res.status_code, 404)
-    self.assertEqual(data['success'], False)
-    self.assertEqual(data['message'], 'resource not found')
 
   def test_get_questions(self):
     res = self.client().get('/questions')
@@ -78,7 +71,15 @@ class TriviaTestCase(unittest.TestCase):
     self.assertEqual(data['message'], 'resource not found')
 
   def test_delete_questions(self):
-    question = Question.query.first()
+    # First we create a new question
+    question = Question(**self.new_question)
+    question.insert()
+    # Now we query for the new question to delete it
+    question = Question.query.filter(
+      Question.question.like(
+        '%' + self.new_question['question'] + '%'
+      )
+    ).one_or_none()
     self.assertTrue(question)
     id = question.id
     res = self.client().delete('/questions/' + str(id))
@@ -104,11 +105,21 @@ class TriviaTestCase(unittest.TestCase):
     self.assertEqual(data['message'], 'unprocessable')
 
   def test_create_new_questions(self):
+    # Try to create a new question
     res = self.client().post('/questions', json=self.new_question)
     data = json.loads(res.data)
 
     self.assertEqual(res.status_code, 200)
     self.assertEqual(data['success'], True)
+    
+    # Delete the new question if created
+    question = Question.query.filter(
+      Question.question.like(
+        '%' + self.new_question['question'] + '%'
+      )
+    ).one_or_none()
+    if question:
+      question.delete()
 
   def test_422_create_new_questions_without_question(self):
     fake_question = self.new_question
