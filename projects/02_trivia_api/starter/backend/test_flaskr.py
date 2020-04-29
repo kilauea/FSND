@@ -177,6 +177,36 @@ class TriviaTestCase(unittest.TestCase):
     self.assertEqual(data['success'], False)
     self.assertEqual(data['message'], 'resource not found')
 
+  def test_create_quizzes(self):
+    # Try to create a new quizze to play the game with all valid categories
+    categories_id = [category.id for category in Category.query.all()]
+    categories_id.append(0)
+    for category_id in categories_id:
+      quizze_query = {
+        'previous_questions': [],
+        'quiz_category': {'type': None, 'id': category_id}
+      }
+      res = self.client().post('/quizzes', json=quizze_query)
+      data = json.loads(res.data)
+
+      self.assertEqual(res.status_code, 200)
+      self.assertEqual(data['success'], True)
+      self.assertTrue(data['question'])
+      self.assertTrue(isinstance(data['question'], dict))
+      self.assertEqual(data['question']['category'] in categories_id, True)
+
+  def test_404_create_quizzes_with_invalid_category(self):
+    quizze_query = {
+      'previous_questions': [],
+      'quiz_category': {'type': None, 'id': -1}
+    }
+    res = self.client().post('/quizzes', json=quizze_query)
+    data = json.loads(res.data)
+
+    self.assertEqual(res.status_code, 422)
+    self.assertEqual(data['success'], False)
+    self.assertEqual(data['message'], 'unprocessable')
+
 # Make the tests conveniently executable
 if __name__ == "__main__":
     unittest.main()
