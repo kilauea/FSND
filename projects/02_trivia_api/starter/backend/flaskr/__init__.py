@@ -35,11 +35,7 @@ def create_app(test_config=None):
     end = start + QUESTIONS_PER_PAGE
 
     formated_selection = [el.format() for el in selection]
-    current_selection = formated_selection[start:end]
-    if len(current_selection) == 0:
-      abort(404)
-
-    return current_selection
+    return formated_selection[start:end]
   
   '''
   @TODO: 
@@ -72,6 +68,8 @@ def create_app(test_config=None):
   def get_questions():
     selection = Question.query.order_by(Question.id.asc()).all()
     questions_page = paginate_selection(request, selection)
+    if len(questions_page) == 0:
+      abort(404)
     categories = Category.query.order_by(Category.id.asc()).all()
 
     return jsonify({
@@ -185,6 +183,8 @@ def create_app(test_config=None):
     if questions is None:
       abort(404)
     questions_page = paginate_selection(request, questions)
+    if len(questions_page) == 0:
+      abort(404)
 
     return jsonify({
       'success': True,

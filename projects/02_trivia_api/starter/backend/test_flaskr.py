@@ -151,6 +151,16 @@ class TriviaTestCase(unittest.TestCase):
     self.assertTrue(data['total_questions'])
     self.assertTrue(data['current_category'])
 
+  def test_search_questions_searchterm_not_found(self):
+    res = self.client().post('/questions', json={'searchTerm': 'zxcvbnm'})
+    data = json.loads(res.data)
+
+    self.assertEqual(res.status_code, 200)
+    self.assertEqual(data['success'], True)
+    self.assertTrue(len(data['questions']) == 0)
+    self.assertTrue(data['total_questions'])
+    self.assertTrue(data['current_category'])
+
   def test_422_search_questions_without_search_term(self):
     res = self.client().post('/questions', json={'searchTerm': ''})
     data = json.loads(res.data)
