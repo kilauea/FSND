@@ -11,6 +11,11 @@
       <ion-label>User</ion-label>
     </ion-tab-button>
 
+    <ion-tab-button tab="manage-users" *ngIf="auth.can('manage:baristas') || auth.can('manage:managers')">
+      <ion-icon name="person"></ion-icon>
+      <ion-label>Manage Users</ion-label>
+    </ion-tab-button>
+
   </ion-tab-bar>
 
 </ion-tabs>

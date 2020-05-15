@@ -7,13 +7,108 @@ from flask_cors import CORS
 
 from .database.models import db_drop_and_create_all, setup_db, Drink
 from .auth.auth import AuthError, requires_auth
+from .users.m2m import Auth0Manager
 
 app = Flask(__name__)
 setup_db(app)
 CORS(app)
+m2m = Auth0Manager()
+
+def get_users(users):
+  users_list = []
+  scopes = []
+  resource_server_name = 'Coffee Shop'
+  coffee_shop_server_and_roles = m2m.getResourceServerAndRoles(resource_server_name)
+
+  if len(coffee_shop_server_and_roles) > 0:
+    for role in coffee_shop_server_and_roles['roles']:
+      if role['name'] in users:
+        permissions = m2m.getRolePermissions(role['id'], resource_server_name)
+        if len(permissions) > 0:
+          user_permissions = [permission['permission_name'] for permission in permissions]
+          user_scopes = [{'name': scope['value'], 'valid': scope['value'] in user_permissions} for scope in coffee_shop_server_and_roles['resource_server']['scopes']]
+
+          users_list.append({
+            'id' : role['id'],
+            'name': role['name'],
+            'permissions': user_scopes
+          })
+  return users_list
 
 '''
-@TODO uncomment the following line to initialize the datbase
+@implement endpoint
+    GET /managers
+        public endpoint
+    returns status code 200 and json {"success": True, "users": users} where users is the list of users
+        that can be managed with manage:managers permission, or appropriate status code indicating reason for failure
+'''
+@app.route('/managers')
+@requires_auth('manage:managers')
+def manage_managers(jwt):
+  return jsonify({
+    'success': True,
+    'users': get_users(['Barista', 'Manager'])
+  })
+
+'''
+@implement endpoint
+    GET /baristas
+        public endpoint
+    returns status code 200 and json {"success": True, "users": users} where users is the list of users
+        that can be managed with manage:baristas permission, or appropriate status code indicating reason for failure
+'''
+@app.route('/baristas')
+@requires_auth('manage:baristas')
+def manage_baristas(jwt):
+  return jsonify({
+    'success': True,
+    'users': get_users(['Barista'])
+  })
+
+'''
+@implement endpoint
+    GET /managers/role_id
+        public endpoint
+    returns status code 200 and json {"success": True, "users": users} where users is the list of users
+        or appropriate status code indicating reason for failure
+'''
+@app.route('/managers/<role_id>', methods=['PATCH'])
+@requires_auth('manage:managers')
+def patch_managers(jwt, role_id):
+  body = request.get_json()
+  role_id = body.get('id', None)
+  new_permissions = body.get('permissions', None)
+  if not role_id or not new_permissions:
+      abort(422)
+  m2m.patchRolePermissions(role_id, new_permissions, 'Coffee Shop')
+  return jsonify({
+    'success': True,
+    'id': role_id
+  })
+
+'''
+@implement endpoint
+    GET /baristas/role_id
+        public endpoint
+    returns status code 200 and json {"success": True, "users": users} where users is the list of users
+        or appropriate status code indicating reason for failure
+'''
+@app.route('/baristas/<role_id>', methods=['PATCH'])
+@requires_auth('manage:baristas')
+def patch_baristas(jwt, role_id):
+  body = request.get_json()
+  role_id = body.get('id', None)
+  new_permissions = body.get('permissions', None)
+  if not role_id or not new_permissions:
+      abort(422)
+  m2m.patchRolePermissions(role_id, new_permissions, 'Coffee Shop')
+  return jsonify({
+    'success': True,
+    'id': role_id
+  })
+
+'''
+@DONE uncomment the following line to initialize the datbase
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
 !! NOTE THIS MUST BE UNCOMMENTED ON FIRST RUN
 '''
@@ -120,7 +215,6 @@ def edit_drinks(jwt, drink_id):
   except:
     print(sys.exc_info())
     abort(422)
-
 
 '''
 @DONE implement endpoint
