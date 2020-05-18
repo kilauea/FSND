@@ -8,6 +8,6 @@ import { AuthService } from 'src/app/services/auth.service';
 })
 export class TabsPage {
   constructor(
-    private auth: AuthService
+    public auth: AuthService
     ) { }
 }
