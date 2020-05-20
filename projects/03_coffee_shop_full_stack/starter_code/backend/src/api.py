@@ -5,9 +5,9 @@ from sqlalchemy import exc
 import json
 from flask_cors import CORS
 
-from .database.models import db_drop_and_create_all, setup_db, Drink
-from .auth.auth import AuthError, requires_auth
-from .users.m2m import Auth0Manager
+from database.models import db_drop_and_create_all, setup_db, Drink
+from auth.auth import AuthError, requires_auth
+from users.m2m import Auth0Manager
 
 app = Flask(__name__)
 setup_db(app)

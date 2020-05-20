@@ -1,3 +1,4 @@
+import sys
 from flask import Flask, request, abort
 import json
 from functools import wraps
@@ -7,10 +8,13 @@ from urllib.request import urlopen
 
 app = Flask(__name__)
 
-AUTH0_DOMAIN = @TODO_REPLACE_WITH_YOUR_DOMAIN
+AUTH0_DOMAIN = 'kilauea.eu.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE = @TODO_REPLACE_WITH_YOUR_API_AUDIENCE
+API_AUDIENCE = 'image'
 
+# https://{{YOUR_DOMAIN}}/authorize?audience={{API_IDENTIFIER}}&response_type=token&client_id={{YOUR_CLIENT_ID}}&redirect_uri={{YOUR_CALLBACK_URI}}
+# https://kilauea.eu.auth0.com/authorize?audience=image&response_type=token&client_id=aYM0MwClXEfKgA3c44oEj5yBO3I05qqG&redirect_uri=http://localhost:3000/login-results
+# http://localhost:3000/login-results#access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkVFUkJESDlzMHZEdHREdHl6WkRVNSJ9.eyJpc3MiOiJodHRwczovL2tpbGF1ZWEuZXUuYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVlYWVkOTVmZGMzMjA2MGJlN2Y3ZTBjYSIsImF1ZCI6ImltYWdlIiwiaWF0IjoxNTg4NjA0MTU5LCJleHAiOjE1ODg2MTEzNTksImF6cCI6ImFZTTBNd0NsWEVmS2dBM2M0NG9FajV5Qk8zSTA1cXFHIiwic2NvcGUiOiIifQ.T43_vEt5qXprtjJqMmoEOoAtYTkeVh1L-nxQ1grheSE9MkNwpIeVJaQ7V9OwI4m0aPaFquDCy0XpnJPPOZpyT5GdlLZxYY_bfHAOmDy4m6eMUF9XNqO62ah7O7C6HgeoKWKI9iFULMrmyDmxhorLRWXUVsj99oJSrWo0UdAfM8aW-TkQAMXKcZQ2gPPBcoW9d4ULp0I76IM4gXsVxZ5UWrAwapVfeIQqNnLc9-cbyFJkdc94H13-pAKgb5eI_yYCapn1HxJBFzey_EIWO-s6iZp-2WlCunfFOmSxSDNTXym7-l_p3EEACVt2d2diLVN3fI1um4XXQqESP6n-HxVZdA&expires_in=7200&token_type=Bearer
 
 class AuthError(Exception):
     def __init__(self, error, status_code):
@@ -104,21 +108,40 @@ def verify_decode_jwt(token):
                 'description': 'Unable to find the appropriate key.'
             }, 400)
 
+def check_permissions(permission, payload):
+  if 'permissions' not in payload:
+    raise AuthError({
+      'code': 'invalid_claims',
+      'description': 'Permissions not included in JWT.'
+    }, 400)
 
-def requires_auth(f):
+  if permission not in payload['permissions']:
+    raise AuthError({
+      'code': 'unauthorized',
+      'description': 'Permission not found.'
+    }, 403)
+  return True
+
+def requires_auth(permission=''):
+  def requires_auth_decorator(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
+      try:
         token = get_token_auth_header()
-        try:
-            payload = verify_decode_jwt(token)
-        except:
-            abort(401)
-        return f(payload, *args, **kwargs)
+        print(token)
+        payload = verify_decode_jwt(token)
+        print(payload)
+      except:
+        print(sys.exc_info())
+        abort(401)
+      check_permissions(permission, payload)
 
+      return f(payload, *args, **kwargs)
     return wrapper
+  return requires_auth_decorator
 
-@app.route('/headers')
-@requires_auth
-def headers(payload):
-    print(payload)
+@app.route('/image')
+@requires_auth('get:image')
+def images(jwt):
+    print(jwt)
     return 'Access Granted'
