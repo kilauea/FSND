@@ -76,3 +76,11 @@ In order to be able to deploy the frontend to Heroku I made several chages:
 There is an issue that I couldn´t solve when logging in. When Auth0 redirects to the indicated callback url, the angula router displays a blanck page at /#/. Refreshing the page will show properly the home page though.
 
 The frontend app can be found at: [https://coffee-shop-full-stack.herokuapp.com](https://coffee-shop-full-stack.herokuapp.com)
+
+## Authors
+
+Arturo Crespo de la Viña
+
+## Ackknowledgements
+
+The Udacity team.
