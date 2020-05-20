@@ -214,3 +214,5 @@ In order to be able to deploy the backend to Heroku I made several chages:
 * Remove the local import paths from api.py
 * Add a runtime.txt file to especify the Python version needed in Heroku
 * The shell script herokuDeployment.sh contains the required commands to deploy the backend Git repository to Heroku
+
+The backend app can be found at: [https://coffeeshop-backend.herokuapp.com](https://coffeeshop-backend.herokuapp.com)
