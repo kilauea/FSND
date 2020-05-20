@@ -83,3 +83,134 @@ There are `@TODO` comments throughout the `./backend/src`. We recommend tackling
 
 1. `./src/auth/auth.py`
 2. `./src/api.py`
+
+## User's permissions management
+
+  To be able to manage the user's permissions granted by Auth0 I've created a new module users/m2m.py to talk with the Auth0 paltform using the required API. As well I've created an new administrador role, and two new permissions:
+  * manage:baristas
+  * manage:managers
+
+  The managers role has the manage:baristas permission which allows to modify baristas permissions, and the administrators role has both permissions to allow to modify baristas and managers permissions. Baristas are not allowd to modifiy any permissions.
+
+  In order to handle the user's permissions from the frontend I've added four new endpoints to the backendend:
+
+### GET /managers
+- General:
+  - Returns a dictionary with all the abailable users that an administrator is allowed to handle and success value
+- Sample: `curl http://127.0.0.1:5000/managers`
+```json
+{
+  "users": [
+    {
+      "id": "role_id",
+      "name": "Barista",
+      "permissions": [
+        {
+          "name": "get:drinks-detail",
+          "valid": true
+        },
+        {
+          "name": "post:drinks",
+          "valid": false
+        },
+        {
+          "name": "patch:drinks",
+          "valid": false
+        },
+        {
+          "name": "delete:drinks",
+          "valid": false
+        }
+      ]
+    },
+    {
+      "id": "role_id",
+      "name": "Manager",
+      "permissions": [
+        {
+          "name": "get:drinks-detail",
+          "valid": true
+        },
+        {
+          "name": "post:drinks",
+          "valid": true
+        },
+        {
+          "name": "patch:drinks",
+          "valid": true
+        },
+        {
+          "name": "delete:drinks",
+          "valid": true
+        }
+      ]
+    }
+  ], 
+  "success": true
+}
+```
+
+### GET /baristas
+- General:
+  - Returns a dictionary with all the abailable users that a manager is allowed to handle and success value
+- Sample: `curl http://127.0.0.1:5000/baristas`
+```json
+{
+  "users": [
+    {
+      "id": "role_id",
+      "name": "Barista",
+      "permissions": [
+        {
+          "name": "get:drinks-detail",
+          "valid": true
+        },
+        {
+          "name": "post:drinks",
+          "valid": false
+        },
+        {
+          "name": "patch:drinks",
+          "valid": false
+        },
+        {
+          "name": "delete:drinks",
+          "valid": false
+        }
+      ]
+    }
+  ], 
+  "success": true
+}
+```
+
+### PATCH /managers/<role_id>
+
+- General:
+  - Allows an administrador to modify the permissions for baristas and managers roles for the given role_id if exists. Returns the modified role_id and success value
+- Sample: `curl http://127.0.0.1:5000/managers/rol_rBT608DLpQcBVKSf -X PATCH -H "Content-Type: application/json" -d '{"permissions":[{"name": "get:drinks-detail", "valid": true}, {"name": "post:drinks", "valid": false}, {"name": "patch:drinks", "valid": false}, {"name": "delete:drinks", "valid": false}]}'`
+```json
+{
+  "role_id": "rol_rBT608DLpQcBVKSf",
+  "success": true
+}
+```
+
+### PATCH /baristas/<role_id>
+- General:
+  - Allows an administrador or manager to modify the permissions for baristas role for the given role_id if exists. Returns the modified role_id and success value
+- Sample: `curl http://127.0.0.1:5000/baristas/rol_rBT608DLpQcBVKSf -X PATCH -H "Content-Type: application/json" -d '{"permissions":[{"name": "get:drinks-detail", "valid": true}, {"name": "post:drinks", "valid": false}, {"name": "patch:drinks", "valid": false}, {"name": "delete:drinks", "valid": false}]}'`
+```json
+{
+  "role_id": "rol_rBT608DLpQcBVKSf",
+  "success": true
+}
+```
+
+### Heroku deployment
+
+In order to be able to deploy the backend to Heroku I made several chages:
+* Add a Procfile file with the commands to run the backend in Heroku: web: gunicorn --pythonpath src api:app. Thr option "--pythonpath src" is needed to avoid errors importing backend python modules
+* Remove the local import paths from api.py
+* Add a runtime.txt file to especify the Python version needed in Heroku
+* The shell script herokuDeployment.sh contains the required commands to deploy the backend Git repository to Heroku

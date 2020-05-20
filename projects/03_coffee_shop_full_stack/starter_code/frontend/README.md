@@ -54,3 +54,23 @@ The authentication system used for this project is Auth0. `./src/services/auth.s
 ### Authorization
 
 The Auth0 JWT includes claims for permissions based on the user's role within the Auth0 system. This project makes use of these claims using the `auth.can(permission)` method which checks if particular permissions exist within the JWT permissions claim of the currently logged in user. This method is defined in  `./src/services/auth.service.ts` and is then used to enable and disable buttons in `./src/pages/drink-menu/drink-form/drink-form.html`.
+
+### User's permissions management
+
+I´ve added a new endpoint in the backend to manage users using the Auth0 API.
+
+The backend includes a new page, user-page, that allows deppending on the logged user's permissions to modidy the premissions.
+
+Permissions can be enabled or disabled by each role, but they can not be deleted or created.
+
+### Heroku deployment
+
+In order to be able to deploy the frontend to Heroku I made several chages:
+* Move the devDependencies to dependencies in packages.json so it works in production build
+* Add an http-server to serve the app from Heroku, and update the scripts in packages.json
+* Updating the environment.prod.ts file with the real urls for the Heroku frontend and backend apps
+* Add a Procfile file with the commands to run the backend in Heroku
+* Addig "useHash: true" in app-routing.module.ts so that the app links work in Heroku
+* The shell script herokuDeployment.sh contains the required commands to deploy the backend Git repository to Heroku
+
+There is an issue that I couldn´t solve when logging in. When Auth0 redirects to the indicated callback url, the angula router displays a blanck page at /#/. Refreshing the page will show properly the home page though.
