@@ -1,0 +1,28 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Manage Users Permissions</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content *ngIf="users && users.items">
+  <div style="display: flex; justify-content: center; padding-top: 20px;">
+    <div style="padding-right: 20px;" *ngFor="let user of Object.keys(users.items)">
+      <ion-list>
+        <ion-header>{{users.items[user].name}}</ion-header>
+        <ion-item-sliding *ngFor="let permission of Object.keys(users.items[user].permissions)">
+          <ion-item>
+            <ion-label>{{users.items[user].permissions[permission].name}}</ion-label>
+            <ion-checkbox
+              slot="start"
+              checked="{{users.items[user].permissions[permission].valid}}"
+              (ionChange)="updatePermission($event, user, permission)">
+            </ion-checkbox>
+          </ion-item>
+        </ion-item-sliding>
+      </ion-list>
+      <ion-button 
+        [disabled]="!(auth.can('manage:baristas') || auth.can('manage:managers'))"
+        (click)="saveClicked(users.items[user].id)">Save</ion-button>
+    </div>
+  </div>
+</ion-content>

@@ -31,6 +31,15 @@ export class AuthService {
     return link;
   }
 
+  build_logout_link(callbackPath = '') {
+    let link = 'https://';
+    link += this.url + '.auth0.com';
+    link += '/v2/logout?';
+   link += 'client_id=' + this.clientId + '&';
+    link += 'returnTo=' + this.callbackURL + callbackPath;
+    return link;
+  }
+
   // invoked in app.component on load
   check_token_fragment() {
     // parse the fragment
@@ -72,6 +81,7 @@ export class AuthService {
     this.token = '';
     this.payload = null;
     this.set_jwt();
+    window.location.href = this.build_logout_link();
   }
 
   can(permission: string) {

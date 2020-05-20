@@ -2,6 +2,8 @@ import os
 from sqlalchemy import Column, String, Integer
 from flask_sqlalchemy import SQLAlchemy
 import json
+from decouple import config as config_decouple
+from .config import config
 
 database_filename = "database.db"
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,8 +16,10 @@ setup_db(app)
     binds a flask application and a SQLAlchemy service
 '''
 def setup_db(app):
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_path
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    enviroment = config['development']
+    if config_decouple('PRODUCTION', default=False):
+        enviroment = config['production']
+    app.config.from_object(enviroment)
     db.app = app
     db.init_app(app)
 
